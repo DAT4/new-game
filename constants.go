@@ -1,8 +1,13 @@
 package main
 
 const (
-	screenWidth  = 640
-	screenHeight = 480
+	screenWidth  = 240
+	screenHeight = 240
+)
+
+const (
+	tileSize = 16
+	tileXNum = 25
 )
 
 const (

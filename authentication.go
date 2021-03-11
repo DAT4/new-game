@@ -23,12 +23,10 @@ type jwt struct {
 	Token string
 }
 
-func (u *User) getToken() {
-	fmt.Println(u.Username)
-	fmt.Println(u.Password)
+func (g *Game) getToken() {
 	link := "http://localhost:8056/login"
 	//link := "https://tmp.mama.sh/api/login"
-	jsonStr, err := json.Marshal(u)
+	jsonStr, err := json.Marshal(g.player)
 	req, err := http.NewRequest("POST", link, bytes.NewBuffer(jsonStr))
 	if err != nil {
 		fmt.Println(err)
@@ -50,6 +48,9 @@ func (u *User) getToken() {
 		return
 	}
 
-	u.token = token.Token
-	u.state = LOGGEDIN
+
+	g.Lock()
+	g.player.token = token.Token
+	g.states.globalState = GAMEPLAY
+	g.Unlock()
 }
