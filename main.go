@@ -2,26 +2,34 @@ package main
 
 import (
 	"bytes"
+	"github.com/hajimehoshi/ebiten/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/images"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
 	"image"
 	"log"
 )
 
-var (
-	tilesImage *ebiten.Image
-)
-
+//Setting the font
 func init() {
-	// Decode image from a byte slice instead of a file so that
-	// this example works in any working directory.
-	// If you want to use a file, there are some options:
-	// 1) Use os.Open and pass the file to the image decoder.
-	//    This is a very regular way, but doesn't work on browsers.
-	// 2) Use ebitenutil.OpenFile and pass the file to the image decoder.
-	//    This works even on browsers.
-	// 3) Use ebitenutil.NewImageFromFile to create an ebiten.Image directly from a file.
-	//    This also works on browsers.
+	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	const dpi = 72
+	mplusNormalFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
+		Size:    14,
+		DPI:     dpi,
+		Hinting: font.HintingFull,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+//Setting the tile image
+func init() {
 	img, _, err := image.Decode(bytes.NewReader(images.Tiles_png))
 	if err != nil {
 		log.Fatal(err)
@@ -29,6 +37,7 @@ func init() {
 	tilesImage = ebiten.NewImageFromImage(img)
 }
 
+//Starting the game
 func main() {
 	game := &Game{
 		layers: [][]int{

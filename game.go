@@ -1,43 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/colornames"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/opentype"
 	"image"
 	"image/color"
-	"log"
+	"net/http"
 	"sync"
 )
-
-const (
-	usernamelbl = `username: `
-	passwordlbl = `password: `
-	loading     = `loading...`
-)
-
-var (
-	mplusNormalFont font.Face
-)
-
-func init() {
-	tt, err := opentype.Parse(fonts.MPlus1pRegular_ttf)
-	if err != nil {
-		log.Fatal(err)
-	}
-	const dpi = 72
-	mplusNormalFont, err = opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    14,
-		DPI:     dpi,
-		Hinting: font.HintingFull,
-	})
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 type Game struct {
 	sync.Mutex
@@ -47,12 +21,7 @@ type Game struct {
 	states  states
 }
 
-type states struct {
-	globalState int
-	loginState  int
-}
-
-func (g *Game) MoveActualPlayer() {
+func (g *Game) moveActualPlayer() {
 	if ebiten.IsKeyPressed(ebiten.KeyH) {
 		g.player.move(LEFT)
 		g.player.face = g.player.left
@@ -67,17 +36,6 @@ func (g *Game) MoveActualPlayer() {
 		g.player.face = g.player.right
 	}
 }
-
-const (
-	LOGIN = iota
-	GAMEPLAY
-)
-
-const (
-	USERNAMETYPING = iota
-	PASSWORDTYPING
-	WAITING
-)
 
 func (g *Game) updateLoginState() {
 	switch g.states.loginState {
@@ -103,20 +61,8 @@ func (g *Game) updateLoginState() {
 			}
 		}
 	case WAITING:
-		if g.player.state == LOGGEDIN {
-			g.states.loginState = GAMEPLAY
-		}
+		fmt.Println("What to do while waiting?")
 	}
-}
-
-func (g *Game) Update() error {
-	switch g.states.globalState {
-	case GAMEPLAY:
-		g.MoveActualPlayer()
-	case LOGIN:
-		g.updateLoginState()
-	}
-	return nil
 }
 
 func (g *Game) drawGamePlay(screen *ebiten.Image) {
@@ -131,7 +77,7 @@ func (g *Game) drawGamePlay(screen *ebiten.Image) {
 			screen.DrawImage(tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image), op)
 		}
 	}
-	text.Draw(screen, g.player.token, mplusNormalFont, 160, 80, color.White)
+	text.Draw(screen, g.player.Token, mplusNormalFont, 160, 80, color.White)
 	for _, player := range g.players {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(player.x, player.y)
@@ -147,15 +93,25 @@ func (g *Game) drawLoginScreen(screen *ebiten.Image) {
 	switch g.states.loginState {
 	case USERNAMETYPING:
 		text.Draw(screen, usernamelbl, mplusNormalFont, 20, 80, color.White)
-		text.Draw(screen, g.player.Username, mplusNormalFont, 160, 80, color.White)
+		text.Draw(screen, g.player.Username, mplusNormalFont, 100, 80, color.White)
 	case PASSWORDTYPING:
 		text.Draw(screen, usernamelbl, mplusNormalFont, 20, 80, color.White)
-		text.Draw(screen, g.player.Username, mplusNormalFont, 160, 80, color.White)
+		text.Draw(screen, g.player.Username, mplusNormalFont, 100, 80, color.White)
 		text.Draw(screen, passwordlbl, mplusNormalFont, 20, 120, color.White)
-		text.Draw(screen, g.player.Password, mplusNormalFont, 160, 120, color.White)
+		text.Draw(screen, g.player.Password, mplusNormalFont, 100, 120, color.White)
 	case WAITING:
 		text.Draw(screen, loading, mplusNormalFont, 20, 120, color.White)
 	}
+}
+
+func (g *Game) Update() error {
+	switch g.states.globalState {
+	case GAMEPLAY:
+		g.moveActualPlayer()
+	case LOGIN:
+		g.updateLoginState()
+	}
+	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -166,4 +122,39 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	case LOGIN:
 		g.drawLoginScreen(screen)
 	}
+}
+
+func (g *Game) getToken() {
+	link := "http://localhost:8056/login"
+	//link := "https://tmp.mama.sh/api/login"
+	jsonStr, err := json.Marshal(g.player)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	req, err := http.NewRequest("POST", link, bytes.NewBuffer(jsonStr))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var tkn jwt
+	err = json.NewDecoder(resp.Body).Decode(&tkn)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	g.Lock()
+	g.player.Token = tkn.Token
+	g.states.globalState = GAMEPLAY
+	g.Unlock()
 }
