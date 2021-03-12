@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/v2"
 	"golang.org/x/image/font"
 )
 
@@ -14,8 +14,8 @@ var (
 
 //Screensize
 const (
-	screenWidth  = 240
-	screenHeight = 240
+	screenWidth  = 480
+	screenHeight = 480
 )
 
 //Tiles
