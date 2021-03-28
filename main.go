@@ -45,7 +45,11 @@ func main() {
 	}
 	game := &Game{
 		layers: layers,
-		player: createPlayer(1),
+		user: &User{
+			Username: "martin",
+			Password: "T3stpass!",
+		},
+		players: make(map[byte]*Player),
 	}
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Backend Game")

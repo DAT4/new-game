@@ -16,9 +16,9 @@ func setupConnection(token string) (c *websocket.Conn, err error) {
 	//link := "tmp.mama.sh"
 	//u := url.URL{Scheme: "wss", Host: link, Path: "/api/game"}
 
-	u := "ws://localhost:8056/"
+	u := "ws://localhost:8056/join"
 	//u := "ws://localhost:8056/create"
-	//u := url.URL{Scheme: "ws", Host: link, Path: "/create"}
+	//u := url.URL{Scheme: "ws", Host: link, Path: "/"}
 	log.Printf("connecting to %s", u)
 
 	header := http.Header{}

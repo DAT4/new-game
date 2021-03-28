@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
-	"strconv"
 )
 
 type Sprite struct {
@@ -19,60 +18,62 @@ type Position struct {
 }
 
 type Player struct {
-	*User
 	id int
 	Sprite
 	*Position
-	face    *ebiten.Image
+	face *ebiten.Image
 }
 
-func (p *Player) move(direction int, pos float64) {
+func (p *Player) sendMove(direction byte) []byte {
 	switch direction {
 	case LEFT:
-		fmt.Println("Player",p.id,"> Pos(", p.x,",",p.y, ")")
-		p.face = p.left
-		p.x = pos
+		return []byte{byte(p.id), byte(p.x - 1), byte(p.y), MOVE, LEFT}
 	case RIGHT:
-		fmt.Println("Player",p.id,"> Pos(", p.x,",",p.y, ")")
-		p.face = p.right
-		p.x = pos
+		return []byte{byte(p.id), byte(p.x + 1), byte(p.y), MOVE, RIGHT}
 	case UP:
-		fmt.Println("Player",p.id,"> Pos(", p.x,",",p.y, ")")
-		p.face = p.up
-		p.y = pos
+		return []byte{byte(p.id), byte(p.x), byte(p.y - 1), MOVE, UP}
 	case DOWN:
-		fmt.Println("Player",p.id,"> Pos(", p.x,",",p.y, ")")
-		p.face = p.down
-		p.y = pos
+		return []byte{byte(p.id), byte(p.x), byte(p.y + 1), MOVE, DOWN}
+	default:
+		return []byte{byte(p.id), byte(p.x), byte(p.y), MOVE, DOWN}
 	}
 }
 
+func (p *Player) move(direction, x, y byte) {
+	switch direction {
+	case LEFT:
+		fmt.Println("Player", p.id, "> Pos(", p.x, ",", p.y, ")")
+		p.face = p.left
+	case RIGHT:
+		fmt.Println("Player", p.id, "> Pos(", p.x, ",", p.y, ")")
+		p.face = p.right
+	case UP:
+		fmt.Println("Player", p.id, "> Pos(", p.x, ",", p.y, ")")
+		p.face = p.up
+	case DOWN:
+		fmt.Println("Player", p.id, "> Pos(", p.x, ",", p.y, ")")
+		p.face = p.down
+	}
+	p.x = float64(x)
+	p.y = float64(y)
+}
+
 func (p *Player) setupPlayerSprite(playerId int) {
-	id := strconv.Itoa(playerId)
+	fmt.Println(playerId, "Find color")
 	p.Sprite = Sprite{
-		left:  getImg("images/p" + id + "l.png"),
-		right: getImg("images/p" + id + "r.png"),
-		up:    getImg("images/p" + id + "u.png"),
-		down:  getImg("images/p" + id + "d.png"),
+		left:  getImg("images/p1l.png"),
+		right: getImg("images/p1r.png"),
+		up:    getImg("images/p1u.png"),
+		down:  getImg("images/p1d.png"),
 	}
 	p.face = p.left
 }
 
-func createPlayer(id int) *Player {
+func createPlayer(id int, pos *Position) *Player {
 	p := &Player{
-		id:     id,
-		Position: &Position{
-			x: 8,
-			y: 8,
-		},
-		User: &User{
-			Username: "martin",
-			Password: "T3stpass!",
-			State:    0,
-			Token:    "",
-		},
+		id:       id,
+		Position: pos,
 	}
 	p.setupPlayerSprite(id)
 	return p
 }
-

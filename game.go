@@ -4,20 +4,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/colornames"
 	"image"
 	"image/color"
+	"log"
 	"net/http"
 	"sync"
 )
 
 type Game struct {
 	sync.Mutex
+	user    *User
+	conn    *websocket.Conn
+	you     byte
 	layers  [][]int
-	player  *Player
 	players map[byte]*Player
 	states  states
 }
@@ -25,37 +29,37 @@ type Game struct {
 func (g *Game) moveActualPlayer() {
 	switch {
 	case inpututil.IsKeyJustPressed(ebiten.KeyH):
-		g.player.move(LEFT, g.player.x-tileSize)
+		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
 	case inpututil.IsKeyJustPressed(ebiten.KeyJ):
-		g.player.move(DOWN, g.player.y+tileSize)
+		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
 	case inpututil.IsKeyJustPressed(ebiten.KeyK):
-		g.player.move(UP, g.player.y-tileSize)
+		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
 	case inpututil.IsKeyJustPressed(ebiten.KeyL):
-		g.player.move(RIGHT, g.player.x+tileSize)
+		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
 	}
 }
 
 func (g *Game) updateLoginState() {
 	switch g.states.loginState {
 	case PASSWORDTYPING:
-		g.player.Password += string(ebiten.InputChars())
+		g.user.Password += string(ebiten.InputChars())
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 			go g.getToken()
 			g.states.loginState = WAITING
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
-			if len(g.player.Password) >= 1 {
-				g.player.Password = g.player.Password[:len(g.player.Password)-1]
+			if len(g.user.Password) >= 1 {
+				g.user.Password = g.user.Password[:len(g.user.Password)-1]
 			}
 		}
 	case USERNAMETYPING:
-		g.player.Username += string(ebiten.InputChars())
+		g.user.Username += string(ebiten.InputChars())
 		if inpututil.IsKeyJustPressed(ebiten.KeyEnter) {
 			g.states.loginState = PASSWORDTYPING
 		}
 		if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
-			if len(g.player.Username) >= 1 {
-				g.player.Username = g.player.Username[:len(g.player.Username)-1]
+			if len(g.user.Username) >= 1 {
+				g.user.Username = g.user.Username[:len(g.user.Username)-1]
 			}
 		}
 	case WAITING:
@@ -82,21 +86,18 @@ func (g *Game) drawGamePlay(screen *ebiten.Image) {
 		screen.DrawImage(player.face, op)
 
 	}
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(g.player.x, g.player.y)
-	screen.DrawImage(g.player.face, op)
 }
 
 func (g *Game) drawLoginScreen(screen *ebiten.Image) {
 	switch g.states.loginState {
 	case USERNAMETYPING:
 		text.Draw(screen, usernamelbl, mplusNormalFont, 20, 80, color.White)
-		text.Draw(screen, g.player.Username, mplusNormalFont, 100, 80, color.White)
+		text.Draw(screen, g.user.Username, mplusNormalFont, 100, 80, color.White)
 	case PASSWORDTYPING:
 		text.Draw(screen, usernamelbl, mplusNormalFont, 20, 80, color.White)
-		text.Draw(screen, g.player.Username, mplusNormalFont, 100, 80, color.White)
+		text.Draw(screen, g.user.Username, mplusNormalFont, 100, 80, color.White)
 		text.Draw(screen, passwordlbl, mplusNormalFont, 20, 120, color.White)
-		text.Draw(screen, g.player.Password, mplusNormalFont, 100, 120, color.White)
+		text.Draw(screen, g.user.Password, mplusNormalFont, 100, 120, color.White)
 	case WAITING:
 		text.Draw(screen, loading, mplusNormalFont, 20, 120, color.White)
 	}
@@ -125,7 +126,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 func (g *Game) getToken() {
 	link := "http://localhost:8056/login"
 	//link := "https://api.backend.mama.sh/login"
-	jsonStr, err := json.Marshal(g.player)
+	jsonStr, err := json.Marshal(g.user)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -152,7 +153,42 @@ func (g *Game) getToken() {
 	}
 
 	g.Lock()
-	g.player.Token = tkn.Token
+	g.user.Token = tkn.Token
 	g.states.globalState = GAMEPLAY
 	g.Unlock()
+	go g.connect()
+
+}
+
+func (g *Game) connect() {
+	var err error
+	g.conn, err = setupConnection(g.user.Token)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for {
+		_, message, err := g.conn.ReadMessage()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if message[3] == ASSIGN {
+			g.you = message[0]
+			g.players[g.you] = createPlayer(int(g.you), &Position{
+				x: float64(message[1]),
+				y: float64(message[2]),
+			})
+			break
+		}
+	}
+	for {
+		_, message, err := g.conn.ReadMessage()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if message[3] == MOVE {
+			g.players[message[0]].move(message[4], message[1], message[2])
+			g.players[message[0]].x = float64(message[2])
+			continue
+		}
+	}
 }

@@ -54,8 +54,17 @@ const (
 
 //Directions
 const (
-	LEFT = iota
+	LEFT byte = iota
 	RIGHT
 	UP
 	DOWN
+)
+
+//Commands
+const (
+	READY byte = iota
+	CREATE
+	ASSIGN
+	MOVE
+	WRITE
 )
