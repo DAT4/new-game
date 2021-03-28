@@ -39,7 +39,7 @@ func init() {
 
 //Starting the game
 func main() {
-	layers, err := readMap()
+	layers, err := getMap()
 	if err != nil {
 		log.Fatal(err)
 	}

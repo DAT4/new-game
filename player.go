@@ -13,29 +13,33 @@ type Sprite struct {
 }
 
 type Position struct {
-	x float64
-	y float64
+	x int
+	y int
 }
 
 type Player struct {
-	id int
+	id byte
 	Sprite
 	*Position
 	face *ebiten.Image
 }
 
+func (p *Player) assign() []byte {
+	return []byte{p.id, byte(p.x), byte(p.y), ASSIGN}
+}
+
 func (p *Player) sendMove(direction byte) []byte {
 	switch direction {
 	case LEFT:
-		return []byte{byte(p.id), byte(p.x - 1), byte(p.y), MOVE, LEFT}
+		return []byte{p.id, byte(p.x - 1), byte(p.y), MOVE, LEFT}
 	case RIGHT:
-		return []byte{byte(p.id), byte(p.x + 1), byte(p.y), MOVE, RIGHT}
+		return []byte{p.id, byte(p.x + 1), byte(p.y), MOVE, RIGHT}
 	case UP:
-		return []byte{byte(p.id), byte(p.x), byte(p.y - 1), MOVE, UP}
+		return []byte{p.id, byte(p.x), byte(p.y - 1), MOVE, UP}
 	case DOWN:
-		return []byte{byte(p.id), byte(p.x), byte(p.y + 1), MOVE, DOWN}
+		return []byte{p.id, byte(p.x), byte(p.y + 1), MOVE, DOWN}
 	default:
-		return []byte{byte(p.id), byte(p.x), byte(p.y), MOVE, DOWN}
+		return []byte{p.id, byte(10), byte(10), MOVE, DOWN}
 	}
 }
 
@@ -54,12 +58,11 @@ func (p *Player) move(direction, x, y byte) {
 		fmt.Println("Player", p.id, "> Pos(", p.x, ",", p.y, ")")
 		p.face = p.down
 	}
-	p.x = float64(x)
-	p.y = float64(y)
+	p.x = int(x)
+	p.y = int(y)
 }
 
-func (p *Player) setupPlayerSprite(playerId int) {
-	fmt.Println(playerId, "Find color")
+func (p *Player) setupPlayerSprite() {
 	p.Sprite = Sprite{
 		left:  getImg("images/p1l.png"),
 		right: getImg("images/p1r.png"),
@@ -69,11 +72,11 @@ func (p *Player) setupPlayerSprite(playerId int) {
 	p.face = p.left
 }
 
-func createPlayer(id int, pos *Position) *Player {
+func createPlayer(id byte, pos *Position) *Player {
 	p := &Player{
 		id:       id,
 		Position: pos,
 	}
-	p.setupPlayerSprite(id)
+	p.setupPlayerSprite()
 	return p
 }

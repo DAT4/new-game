@@ -31,11 +31,11 @@ func (g *Game) moveActualPlayer() {
 	case inpututil.IsKeyJustPressed(ebiten.KeyH):
 		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
 	case inpututil.IsKeyJustPressed(ebiten.KeyJ):
-		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
+		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(DOWN))
 	case inpututil.IsKeyJustPressed(ebiten.KeyK):
-		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
+		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(UP))
 	case inpututil.IsKeyJustPressed(ebiten.KeyL):
-		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
+		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(RIGHT))
 	}
 }
 
@@ -82,9 +82,8 @@ func (g *Game) drawGamePlay(screen *ebiten.Image) {
 	//text.Draw(screen, g.player.Token, mplusNormalFont, 160, 80, color.White)
 	for _, player := range g.players {
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(player.x, player.y)
+		op.GeoM.Translate(float64(player.x*tileSize), float64(player.y*tileSize))
 		screen.DrawImage(player.face, op)
-
 	}
 }
 
@@ -124,8 +123,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) getToken() {
-	link := "http://localhost:8056/login"
-	//link := "https://api.backend.mama.sh/login"
+	//link := "http://localhost:8056/login"
+	link := "https://api.backend.mama.sh/login"
 	jsonStr, err := json.Marshal(g.user)
 	if err != nil {
 		fmt.Println(err)
@@ -152,6 +151,7 @@ func (g *Game) getToken() {
 		return
 	}
 
+	fmt.Println(tkn.Token)
 	g.Lock()
 	g.user.Token = tkn.Token
 	g.states.globalState = GAMEPLAY
@@ -168,27 +168,42 @@ func (g *Game) connect() {
 	}
 	for {
 		_, message, err := g.conn.ReadMessage()
+		fmt.Println(message)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if message[3] == ASSIGN {
+		if message[3] == CREATE {
 			g.you = message[0]
-			g.players[g.you] = createPlayer(int(g.you), &Position{
-				x: float64(message[1]),
-				y: float64(message[2]),
+			fmt.Println(g.you)
+			g.players[g.you] = createPlayer(g.you, &Position{
+				x: int(message[1]),
+				y: int(message[2]),
 			})
+			for _, id := range message[3:] {
+				g.players[id] = createPlayer(g.you, &Position{
+					x: int(message[1]),
+					y: int(message[2]),
+				})
+			}
+			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].assign())
 			break
 		}
 	}
 	for {
 		_, message, err := g.conn.ReadMessage()
+		fmt.Println(message)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if message[3] == MOVE {
+		player := message[0]
+		switch message[3] {
+		case MOVE:
 			g.players[message[0]].move(message[4], message[1], message[2])
-			g.players[message[0]].x = float64(message[2])
-			continue
+		case ASSIGN:
+			g.players[player] = createPlayer(player, &Position{
+				x: int(message[1]),
+				y: int(message[2]),
+			})
 		}
 	}
 }

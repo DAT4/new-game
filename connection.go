@@ -13,17 +13,12 @@ func setupConnection(token string) (c *websocket.Conn, err error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	//link := "tmp.mama.sh"
-	//u := url.URL{Scheme: "wss", Host: link, Path: "/api/game"}
-
-	u := "ws://localhost:8056/join"
-	//u := "ws://localhost:8056/create"
-	//u := url.URL{Scheme: "ws", Host: link, Path: "/"}
+	u := "wss://api.backend.mama.sh/join"
+	//u := "ws://127.0.0.1:8056/join"
 	log.Printf("connecting to %s", u)
 
 	header := http.Header{}
 	header.Add("Authorization", "bearer "+token)
-
 	c, _, err = websocket.DefaultDialer.Dial(u, header)
 	return
 }
