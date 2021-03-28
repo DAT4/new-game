@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -46,16 +45,12 @@ func (p *Player) sendMove(direction byte) []byte {
 func (p *Player) move(direction, x, y byte) {
 	switch direction {
 	case LEFT:
-		fmt.Println("Player", p.id, "> Pos(", p.x, ",", p.y, ")")
 		p.face = p.left
 	case RIGHT:
-		fmt.Println("Player", p.id, "> Pos(", p.x, ",", p.y, ")")
 		p.face = p.right
 	case UP:
-		fmt.Println("Player", p.id, "> Pos(", p.x, ",", p.y, ")")
 		p.face = p.up
 	case DOWN:
-		fmt.Println("Player", p.id, "> Pos(", p.x, ",", p.y, ")")
 		p.face = p.down
 	}
 	p.x = int(x)
@@ -64,10 +59,10 @@ func (p *Player) move(direction, x, y byte) {
 
 func (p *Player) setupPlayerSprite() {
 	p.Sprite = Sprite{
-		left:  getImg("images/p1l.png"),
-		right: getImg("images/p1r.png"),
-		up:    getImg("images/p1u.png"),
-		down:  getImg("images/p1d.png"),
+		left:  getImg("https://mama.sh/p1l.png"),
+		right: getImg("https://mama.sh/p1r.png"),
+		up:    getImg("https://mama.sh/p1u.png"),
+		down:  getImg("https://mama.sh/p1d.png"),
 	}
 	p.face = p.left
 }

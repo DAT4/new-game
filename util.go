@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"image/png"
+	_ "image/png"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,11 +12,15 @@ import (
 )
 
 func getImg(path string) *ebiten.Image {
-	file, err := ebitenutil.OpenFile(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	img, err := png.Decode(file)
+	//file, err := ebitenutil.OpenFile(path)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//img, err := png.Decode(file)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	img, err := ebitenutil.NewImageFromURL(path)
 	if err != nil {
 		log.Fatal(err)
 	}
