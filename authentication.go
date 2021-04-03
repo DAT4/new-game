@@ -8,5 +8,6 @@ type User struct {
 }
 
 type jwt struct {
-	Token string
+	AuthToken    string `json:"auth_token"`
+	RefreshToken string `json:"refresh_token"`
 }
