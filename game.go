@@ -29,14 +29,41 @@ type Game struct {
 func (g *Game) moveActualPlayer() {
 	switch {
 	case inpututil.IsKeyJustPressed(ebiten.KeyH):
-		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
+		if g.players[g.you].x > 0 && g.onTheRoad(LEFT) {
+			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
+		}
 	case inpututil.IsKeyJustPressed(ebiten.KeyJ):
-		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(DOWN))
+		if g.players[g.you].y < 29 && g.onTheRoad(DOWN) {
+			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(DOWN))
+		}
 	case inpututil.IsKeyJustPressed(ebiten.KeyK):
-		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(UP))
+		if g.players[g.you].y > 0 && g.onTheRoad(UP) {
+			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(UP))
+		}
 	case inpututil.IsKeyJustPressed(ebiten.KeyL):
-		g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(RIGHT))
+		if g.players[g.you].x < 29 && g.onTheRoad(RIGHT) {
+			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(RIGHT))
+		}
 	}
+}
+
+func (g *Game) onTheRoad(dir byte) (ok bool) {
+	p := g.players[g.you]
+	r := g.layers[1]
+	var pos int
+	switch dir {
+	case LEFT:
+		pos = p.x - 1 + p.y*30
+	case RIGHT:
+		pos = p.x + 1 + p.y*30
+	case UP:
+		pos = p.x + (p.y-1)*30
+	case DOWN:
+		pos = p.x + (p.y+1)*30
+	default:
+		return false
+	}
+	return 0 != r[pos]
 }
 
 func (g *Game) updateLoginState() {
@@ -123,8 +150,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) getToken() {
-	//link := "http://localhost:8056/login"
-	link := "https://api.backend.mama.sh/login"
+	link := "http://localhost:8056/login"
+	//link := "https://api.backend.mama.sh/login"
 	jsonStr, err := json.Marshal(g.user)
 	if err != nil {
 		fmt.Println(err)
@@ -154,7 +181,6 @@ func (g *Game) getToken() {
 	fmt.Println(tkn.Token)
 	g.Lock()
 	g.user.Token = tkn.Token
-	g.states.globalState = GAMEPLAY
 	g.Unlock()
 	go g.connect()
 
@@ -189,6 +215,7 @@ func (g *Game) connect() {
 			break
 		}
 	}
+	g.states.globalState = GAMEPLAY
 	for {
 		_, message, err := g.conn.ReadMessage()
 		fmt.Println(message)
