@@ -44,13 +44,15 @@ func main() {
 		log.Fatal(err)
 	}
 	game := &Game{
-		layers: layers,
+		layers:  layers,
+		canMove: true,
 		user: &User{
 			Username: "martin",
 			Password: "T3stpass!",
 		},
 		players: make(map[byte]*Player),
 	}
+	go game.movementTimer()
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Backend Game")
 	if err := ebiten.RunGame(game); err != nil {

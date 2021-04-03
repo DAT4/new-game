@@ -14,10 +14,12 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type Game struct {
 	sync.Mutex
+	canMove bool
 	user    *User
 	conn    *websocket.Conn
 	you     byte
@@ -27,23 +29,41 @@ type Game struct {
 }
 
 func (g *Game) moveActualPlayer() {
-	switch {
-	case inpututil.IsKeyJustPressed(ebiten.KeyH):
-		if g.players[g.you].x > 0 && g.onTheRoad(LEFT) {
-			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
+	if g.canMove {
+		g.Lock()
+		g.canMove = false
+		g.Unlock()
+		switch {
+		case ebiten.IsKeyPressed(ebiten.KeyH):
+			if g.players[g.you].x > 0 && g.onTheRoad(LEFT) {
+				g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
+			}
+		case ebiten.IsKeyPressed(ebiten.KeyJ):
+			if g.players[g.you].y < 29 && g.onTheRoad(DOWN) {
+				g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(DOWN))
+			}
+		case ebiten.IsKeyPressed(ebiten.KeyK):
+			if g.players[g.you].y > 0 && g.onTheRoad(UP) {
+				g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(UP))
+			}
+		case ebiten.IsKeyPressed(ebiten.KeyL):
+			if g.players[g.you].x < 29 && g.onTheRoad(RIGHT) {
+				g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(RIGHT))
+			}
+		default:
+			g.Lock()
+			g.canMove = true
+			g.Unlock()
 		}
-	case inpututil.IsKeyJustPressed(ebiten.KeyJ):
-		if g.players[g.you].y < 29 && g.onTheRoad(DOWN) {
-			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(DOWN))
-		}
-	case inpututil.IsKeyJustPressed(ebiten.KeyK):
-		if g.players[g.you].y > 0 && g.onTheRoad(UP) {
-			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(UP))
-		}
-	case inpututil.IsKeyJustPressed(ebiten.KeyL):
-		if g.players[g.you].x < 29 && g.onTheRoad(RIGHT) {
-			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(RIGHT))
-		}
+	}
+}
+
+func (g *Game) movementTimer() {
+	for {
+		time.Sleep(200 * time.Millisecond)
+		g.Lock()
+		g.canMove = true
+		g.Unlock()
 	}
 }
 
@@ -178,9 +198,8 @@ func (g *Game) getToken() {
 		return
 	}
 
-	fmt.Println(tkn.Token)
 	g.Lock()
-	g.user.Token = tkn.Token
+	g.user.Token = tkn.AuthToken
 	g.Unlock()
 	go g.connect()
 
