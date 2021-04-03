@@ -13,8 +13,8 @@ func setupConnection(token string) (c *websocket.Conn, err error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	//u := "wss://api.backend.mama.sh/join"
-	u := "ws://127.0.0.1:8056/join"
+	u := "wss://api.backend.mama.sh/join"
+	//u := "ws://127.0.0.1:8056/join"
 	log.Printf("connecting to %s", u)
 
 	header := http.Header{}

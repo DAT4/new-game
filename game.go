@@ -170,8 +170,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) getToken() {
-	link := "http://localhost:8056/login"
-	//link := "https://api.backend.mama.sh/login"
+	//link := "http://localhost:8056/login"
+	link := "https://api.backend.mama.sh/login"
 	jsonStr, err := json.Marshal(g.user)
 	if err != nil {
 		fmt.Println(err)
