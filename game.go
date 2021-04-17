@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -12,7 +10,6 @@ import (
 	"image"
 	"image/color"
 	"log"
-	"net/http"
 	"sync"
 	"time"
 )
@@ -110,7 +107,6 @@ func (g *Game) updateLoginState() {
 			}
 		}
 	case WAITING:
-		fmt.Println("What to do while waiting?")
 	}
 }
 
@@ -169,41 +165,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 }
 
-func (g *Game) getToken() {
-	//link := "http://localhost:8056/login"
-	link := "https://api.backend.mama.sh/login"
-	jsonStr, err := json.Marshal(g.user)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	req, err := http.NewRequest("POST", link, bytes.NewBuffer(jsonStr))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer resp.Body.Close()
-
-	var tkn jwt
-	err = json.NewDecoder(resp.Body).Decode(&tkn)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	g.Lock()
-	g.user.Token = tkn.AuthToken
-	g.Unlock()
-	go g.connect()
-
-}
 
 func (g *Game) connect() {
 	var err error
