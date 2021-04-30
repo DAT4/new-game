@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
@@ -10,6 +10,7 @@ import (
 	"image"
 	"image/color"
 	"log"
+	"nhooyr.io/websocket"
 	"sync"
 	"time"
 )
@@ -32,20 +33,20 @@ func (g *Game) moveActualPlayer() {
 		g.Unlock()
 		switch {
 		case ebiten.IsKeyPressed(ebiten.KeyH):
-			if g.players[g.you].x > 0 && g.onTheRoad(LEFT) {
-				g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(LEFT))
+			if g.players[g.you].x > 0 {
+				g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(LEFT))
 			}
 		case ebiten.IsKeyPressed(ebiten.KeyJ):
-			if g.players[g.you].y < 29 && g.onTheRoad(DOWN) {
-				g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(DOWN))
+			if g.players[g.you].y < 29 {
+				g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(DOWN))
 			}
 		case ebiten.IsKeyPressed(ebiten.KeyK):
-			if g.players[g.you].y > 0 && g.onTheRoad(UP) {
-				g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(UP))
+			if g.players[g.you].y > 0 {
+				g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(UP))
 			}
 		case ebiten.IsKeyPressed(ebiten.KeyL):
-			if g.players[g.you].x < 29 && g.onTheRoad(RIGHT) {
-				g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].sendMove(RIGHT))
+			if g.players[g.you].x < 29 {
+				g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(RIGHT))
 			}
 		default:
 			g.Lock()
@@ -62,25 +63,6 @@ func (g *Game) movementTimer() {
 		g.canMove = true
 		g.Unlock()
 	}
-}
-
-func (g *Game) onTheRoad(dir byte) (ok bool) {
-	p := g.players[g.you]
-	r := g.layers[1]
-	var pos int
-	switch dir {
-	case LEFT:
-		pos = p.x - 1 + p.y*30
-	case RIGHT:
-		pos = p.x + 1 + p.y*30
-	case UP:
-		pos = p.x + (p.y-1)*30
-	case DOWN:
-		pos = p.x + (p.y+1)*30
-	default:
-		return false
-	}
-	return 0 != r[pos]
 }
 
 func (g *Game) updateLoginState() {
@@ -165,7 +147,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 }
 
-
 func (g *Game) connect() {
 	var err error
 	g.conn, err = setupConnection(g.user.Token)
@@ -173,7 +154,7 @@ func (g *Game) connect() {
 		log.Fatal(err)
 	}
 	for {
-		_, message, err := g.conn.ReadMessage()
+		_, message, err := g.conn.Read(context.Background())
 		fmt.Println(message)
 		if err != nil {
 			log.Fatal(err)
@@ -185,19 +166,13 @@ func (g *Game) connect() {
 				x: int(message[1]),
 				y: int(message[2]),
 			})
-			for _, id := range message[3:] {
-				g.players[id] = createPlayer(g.you, &Position{
-					x: int(message[1]),
-					y: int(message[2]),
-				})
-			}
-			g.conn.WriteMessage(websocket.BinaryMessage, g.players[g.you].assign())
+			g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].assign())
 			break
 		}
 	}
 	g.states.globalState = GAMEPLAY
 	for {
-		_, message, err := g.conn.ReadMessage()
+		_, message, err := g.conn.Read(context.Background())
 		fmt.Println(message)
 		if err != nil {
 			log.Fatal(err)

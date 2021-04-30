@@ -2,18 +2,19 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"nhooyr.io/websocket"
 	"os"
 	"os/signal"
 )
 
 func (g *Game) getToken() {
-	link := "http://localhost:8056/login"
-	//link := "https://api.backend.mama.sh/login"
+	//link := "http://localhost/login"
+	link := "https://api.backend.mama.sh/login"
 	jsonStr, err := json.Marshal(g.user)
 	if err != nil {
 		fmt.Println(err)
@@ -51,14 +52,17 @@ func setupConnection(token string) (c *websocket.Conn, err error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	//u := "wss://api.backend.mama.sh/join"
-	u := "ws://127.0.0.1:8056/join"
+	u := "wss://api.backend.mama.sh/join"
+	//u := "ws://localhost/join"
 	log.Printf("connecting to %s", u)
 
-	c, _, err = websocket.DefaultDialer.Dial(u, nil)
+	c, _, err = websocket.Dial(context.Background(), u, nil)
+	if err != nil {
+		return nil, err
+	}
 	token = fmt.Sprintf("Bearer %v", token)
 	fmt.Println(token)
-	message := append([]byte{0,0,0,0},token...)
-	c.WriteMessage(websocket.BinaryMessage,message)
+	message := append([]byte{0, 0, 0, 0}, token...)
+	err = c.Write(context.Background(), websocket.MessageBinary, message)
 	return
 }
