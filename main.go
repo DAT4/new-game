@@ -52,7 +52,6 @@ func main() {
 		},
 		players: make(map[byte]*Player),
 	}
-	go game.movementTimer()
 	ebiten.SetWindowSize(screenWidth, screenHeight)
 	ebiten.SetWindowTitle("Backend Game")
 	if err := ebiten.RunGame(game); err != nil {

@@ -12,7 +12,6 @@ import (
 	"log"
 	"nhooyr.io/websocket"
 	"sync"
-	"time"
 )
 
 type Game struct {
@@ -28,40 +27,16 @@ type Game struct {
 
 func (g *Game) moveActualPlayer() {
 	if g.canMove {
-		g.Lock()
-		g.canMove = false
-		g.Unlock()
 		switch {
-		case ebiten.IsKeyPressed(ebiten.KeyH):
-			if g.players[g.you].x > 0 {
-				g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(LEFT))
-			}
-		case ebiten.IsKeyPressed(ebiten.KeyJ):
-			if g.players[g.you].y < 29 {
-				g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(DOWN))
-			}
-		case ebiten.IsKeyPressed(ebiten.KeyK):
-			if g.players[g.you].y > 0 {
-				g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(UP))
-			}
-		case ebiten.IsKeyPressed(ebiten.KeyL):
-			if g.players[g.you].x < 29 {
-				g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(RIGHT))
-			}
-		default:
-			g.Lock()
-			g.canMove = true
-			g.Unlock()
+		case ebiten.IsKeyPressed(ebiten.KeyLeft):
+			g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(LEFT))
+		case ebiten.IsKeyPressed(ebiten.KeyDown):
+			g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(DOWN))
+		case ebiten.IsKeyPressed(ebiten.KeyUp):
+			g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(UP))
+		case ebiten.IsKeyPressed(ebiten.KeyRight):
+			g.conn.Write(context.Background(), websocket.MessageBinary, g.players[g.you].sendMove(RIGHT))
 		}
-	}
-}
-
-func (g *Game) movementTimer() {
-	for {
-		time.Sleep(200 * time.Millisecond)
-		g.Lock()
-		g.canMove = true
-		g.Unlock()
 	}
 }
 

@@ -13,8 +13,8 @@ import (
 )
 
 func (g *Game) getToken() {
-	//link := "http://localhost/login"
-	link := "https://api.backend.mama.sh/login"
+	link := "http://localhost:8080/login"
+	//link := "https://api.backend.mama.sh/login"
 	jsonStr, err := json.Marshal(g.user)
 	if err != nil {
 		fmt.Println(err)
@@ -52,8 +52,8 @@ func setupConnection(token string) (c *websocket.Conn, err error) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	u := "wss://api.backend.mama.sh/join"
-	//u := "ws://localhost/join"
+	//u := "wss://api.backend.mama.sh/join"
+	u := "ws://localhost:8080/join"
 	log.Printf("connecting to %s", u)
 
 	c, _, err = websocket.Dial(context.Background(), u, nil)
