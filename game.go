@@ -134,6 +134,12 @@ func (g *Game) connect() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		if message[3] == ASSIGN {
+			g.players[message[0]] = createPlayer(message[0], &Position{
+				x: int(message[1]),
+				y: int(message[2]),
+			})
+		}
 		if message[3] == CREATE {
 			g.you = message[0]
 			fmt.Println(g.you)
